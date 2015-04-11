@@ -1,0 +1,34 @@
+# Assumes the data are in the current working directory 
+
+# Read in first 100 rows to see summary of data and variable names
+dat.sum <- read.table("household_power_consumption.txt", nrows=100, header=TRUE, sep=";")
+str(dat.sum)
+
+# For this project, we are only interested in data from the dates 2007-02-01 and 2007-02-02. Therefore, we can read in only these data to save memory and processing time. However, it appears that dates are in the form day/month/year. We can verify this by only reading in the Date column from the data
+dat.date <- read.table("household_power_consumption.txt", colClasses=c("factor",rep("NULL",8)), header=TRUE, sep=";")
+levels(dat.date$Date)
+
+# Use the sqldf package to use sql code to specify the dates needed
+library(sqldf)
+subdat <- read.csv.sql("household_power_consumption.txt", sql= 'select * from file where(Date in ("1/2/2007","2/2/2007"))', sep=";")
+closeAllConnections()
+str(subdat)
+
+# Check: each date should have 60*24=1440 records, since data has a one-minute sampling rate
+table(subdat$Date)
+
+# Convert date to date class
+subdat$Date1 <- as.Date(subdat$Date, "%d/%m/%Y")
+table(subdat$Date1); class(subdat$Date1)
+
+# Combine date and time to POSIXlt class
+subdat$Date.Time <- as.POSIXct(strptime(paste(subdat$Date, subdat$Time, sep=" "), format="%d/%m/%Y %H:%M:%S"))
+
+# Check new date/time variable
+class(subdat$Date.Time)
+subdat$Date.Time[1:10]
+
+# Plot 1: Histogram of Global Active Power
+png(filename="plot1.png")
+hist(subdat$Global_active_power, col="red", xlab="Global Active Power (kilowatts)", main="Global Active Power")
+dev.off()
